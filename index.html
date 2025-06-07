@@ -22,114 +22,137 @@
 </head>
 
 <body class="bg-pink-droplets min-h-screen flex items-center justify-center space-y-6 gap-20">
-
   <div class="bg-gradient-to-r from-pink-300 to-cyan-200 p-10 rounded-2xl shadow-md w-full max-w-md">
     <h2 class="text-2xl font-bold mb-4 text-center">📝 To-Do List</h2>
 
     <div class="flex space-x-2 mb-4">
       <input id="taskInput" type="text" placeholder="Enter a new task"
         class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400" />
-      <button onclick="addTask()" class="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600">
-        Add
-      </button>
+      <button onclick="addTask()" class="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600">Add</button>
     </div>
 
     <ul id="taskList" class="space-y-2"></ul>
   </div>
 
   <div id="taskCounter"
-    class="roboto-condensed w-40 h-40 flex items-center justify-center text-center text-5xl font-semibold text-black bg-gradient-to-r from-pink-300 to-cyan-200  rounded-full shadow-md border-2 border-gray-300">
+    class="roboto-condensed w-40 h-40 flex items-center justify-center text-center text-5xl font-semibold text-black bg-gradient-to-r from-pink-300 to-cyan-200 rounded-full shadow-md border-2 border-gray-300">
     0/0
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
 
   <script>
-    // window.onload = function() {
-    //   alert("Welcome to the website!Add your tasks to complete it 🔥");
-    // };
     const taskInput = document.getElementById("taskInput");
     const taskList = document.getElementById("taskList");
     const taskCounter = document.getElementById("taskCounter");
 
-    function updateTaskCounter() {
-      const checkboxes = Array.from(taskList.querySelectorAll("input[type='checkbox']"));
-      const total = taskList.children.length;
-      const completed = checkboxes.filter(cb => cb.checked).length;
-      taskCounter.textContent = ` ${completed} / ${total}`;
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 
+    function saveTasks() {
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    function updateTaskCounter() {
+      const total = tasks.length;
+      const completed = tasks.filter(task => task.completed).length;
+      taskCounter.textContent = `${completed} / ${total}`;
       checkAllCompleted(completed, total);
     }
 
     function checkAllCompleted(completed, total) {
       if (total > 0 && completed === total) {
         starconfetti();
-        
         setTimeout(() => {
           alert("🎉 Good Work! All tasks are completed!");
-
-          
-          taskList.innerHTML = "";
-
-          
-          updateTaskCounter();
+          tasks = [];
+          saveTasks();
+          renderTasks();
         }, 3000);
       }
     }
+
+    function renderTasks() {
+      taskList.innerHTML = "";
+      tasks.forEach((task, index) => {
+        const li = document.createElement("li");
+        li.className = "roboto-condensed text-xl border-purple-900 flex items-center justify-between bg-purple-200 px-4 py-2 rounded-lg hover:bg-purple-400";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "mr-2 accent-green-500";
+        checkbox.checked = task.completed;
+
+        const span = document.createElement("span");
+        span.textContent = task.text;
+        span.className = "flex-1 cursor-pointer";
+        if (task.completed) {
+          span.classList.add("line-through", "text-blue-800");
+        }
+
+        span.onclick = () => span.classList.toggle("line-through");
+
+        checkbox.addEventListener("change", () => {
+          task.completed = checkbox.checked;
+          if (checkbox.checked) {
+            span.classList.add("line-through", "text-blue-800");
+            blastconfettti();
+          } else {
+            span.classList.remove("line-through", "text-blue-800");
+          }
+          saveTasks();
+          updateTaskCounter();
+        });
+
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "✏️";
+        editBtn.className = "ml-2 text-yellow-600 hover:text-yellow-800";
+        editBtn.onclick = () => {
+          const newText = prompt("Edit your task:", task.text);
+          if (newText !== null && newText.trim() !== "") {
+            task.text = newText.trim();
+            saveTasks();
+            renderTasks();
+          }
+        };
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "❌";
+        deleteBtn.className = "ml-2 text-red-500 hover:text-red-700";
+        deleteBtn.onclick = () => {
+          tasks.splice(index, 1);
+          saveTasks();
+          renderTasks();
+        };
+
+        li.appendChild(checkbox);
+        li.appendChild(span);
+        li.appendChild(editBtn);
+        li.appendChild(deleteBtn);
+        taskList.appendChild(li);
+      });
+      updateTaskCounter();
+    }
+
     function addTask() {
       const taskText = taskInput.value.trim();
-
       if (taskText === "") {
         alert("Please enter a task.");
         return;
       }
 
-      const li = document.createElement("li");
-      li.className = "roboto-condensed text-xl border-purple-900 flex items-center justify-between bg-purple-200 px-4 py-2 rounded-lg hover:bg-purple-400";
-
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.className = "mr-2 accent-green-500";
-
-      const span = document.createElement("span");
-      span.textContent = taskText;
-      span.className = "flex-1 cursor-pointer";
-      span.onclick = () => span.classList.toggle("line-through");
-
-      checkbox.addEventListener("change", () => {
-        if (checkbox.checked) {
-          span.classList.add("line-through", "text-blue-800");
-          blastconfettti();
-        } else {
-          span.classList.remove("line-through", "text-blue-800");
-        }
-        updateTaskCounter();
-      });
-
-      const deleteBtn = document.createElement("button");
-      deleteBtn.textContent = "❌";
-      deleteBtn.className = "ml-4 text-red-500 hover:text-red-700";
-      deleteBtn.onclick = () => {
-        li.remove();
-        updateTaskCounter();
-      }
-
-      li.appendChild(checkbox);
-      li.appendChild(span);
-      li.appendChild(deleteBtn);
-      taskList.appendChild(li);
-
+      tasks.push({ text: taskText, completed: false });
       taskInput.value = "";
-      updateTaskCounter();
+      saveTasks();
+      renderTasks();
     }
+
     const blastconfettti = () => {
       confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 },
       });
-
-    }
+    };
 
     const starconfetti = () => {
       const defaults = {
@@ -141,28 +164,18 @@
         shapes: ["star"],
         colors: ["FFE400", "FFBD00", "E89400", "FFCA6C", "FDFFB8"],
       };
-
       function shoot() {
-        confetti({
-          ...defaults,
-          particleCount: 40,
-          scalar: 1.2,
-          shapes: ["star"],
-        });
-
-        confetti({
-          ...defaults,
-          particleCount: 10,
-          scalar: 0.75,
-          shapes: ["circle"],
-        });
+        confetti({ ...defaults, particleCount: 40, scalar: 1.2, shapes: ["star"] });
+        confetti({ ...defaults, particleCount: 10, scalar: 0.75, shapes: ["circle"] });
       }
-
       setTimeout(shoot, 0);
       setTimeout(shoot, 100);
       setTimeout(shoot, 200);
-    }
+    };
+
+    window.onload = renderTasks;
   </script>
 </body>
+
 
 </html>
